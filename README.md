@@ -1,6 +1,6 @@
 # Mfaro HR & Payroll
 
-[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Existing read-only tour](https://mfaro-hr-payroll.the-tasseoma-1204.chatgpt.site)
+[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Live read-only demo](https://andrewmadume.github.io/MfaroHR-Payroll/)
 
 Mfaro is a responsive HR and payroll application built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Better Auth. It includes fictional demonstration records and six separate role accounts. The supplied Mfaro logo is included.
 
@@ -142,3 +142,7 @@ Restore into a separate empty PostgreSQL database with `pg_restore`, restore the
 - `tests/`: calculation, permission and API integration tests.
 
 Dependencies follow current [Next.js installation guidance](https://nextjs.org/docs/app/getting-started/installation) and [Prisma PostgreSQL adapter guidance](https://www.prisma.io/docs/orm/v7/core-concepts/supported-databases/postgresql). Exact installed versions are recorded in `package-lock.json`.
+
+## GitHub verification
+
+The initial GitHub-hosted PostgreSQL build and integration checks passed on Ubuntu with Node.js 24: [successful application check](https://github.com/andrewmadume/MfaroHR-Payroll/actions/runs/42503700361). The [Pages deployment](https://github.com/andrewmadume/MfaroHR-Payroll/actions/runs/42503842793) also succeeded. These checks verify the demonstration implementation; they do not resolve the unfinished production requirements.

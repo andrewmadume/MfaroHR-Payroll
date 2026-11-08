@@ -2,6 +2,10 @@
 
 Repository: https://github.com/andrewmadume/MfaroHR-Payroll
 
+Live read-only demonstration: https://andrewmadume.github.io/MfaroHR-Payroll/
+
+GitHub Pages is enabled with GitHub Actions, and the initial deployment succeeded. The steps below describe how to republish future changes.
+
 This repository contains the application source, PostgreSQL migration, fictional seed, supplied logo, test suite and operational documentation. Local credentials, database files, private attachments, node_modules and generated build output are excluded.
 
 ## GitHub Pages
