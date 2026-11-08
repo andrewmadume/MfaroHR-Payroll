@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+}
+model User {
+  id String @id
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  accounts Account[]
+  memberships Membership[]
+  @@map("user")
+}
+model Session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  @@index([userId])
+  @@map("session")
+}
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+  @@map("account")
+}
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+model RateLimit {
+  id String @id @default(cuid())
+  key String @unique
+  count Int
+  lastRequest BigInt
+  @@map("rateLimit")
+}
+model Organisation {
+  id String @id @default(cuid())
+  name String
+  currency String @default("USD")
+  timezone String @default("Africa/Harare")
+  mode String @default("demo")
+  settings Json @default("{}")
+  memberships Membership[]
+  employees Employee[]
+  records Record[]
+  runs PayrollRun[]
+  audits Audit[]
+}
+model Membership {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  organisationId String
+  organisation Organisation @relation(fields:[organisationId],references:[id])
+  role String
+  department String?
+  employeeId String?
+  permissions Json @default("[]")
+  @@unique([userId,organisationId])
+}
+model Employee {
+  id String @id @default(cuid())
+  organisationId String
+  organisation Organisation @relation(fields:[organisationId],references:[id])
+  number String
+  name String
+  email String
+  department String
+  branch String
+  jobTitle String
+  startDate String
+  status String @default("Active")
+  currency String @default("USD")
+  profile Json @default("{}")
+  salaries Salary[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([organisationId,number])
+  @@index([organisationId,department])
+}
+model Salary {
+  id String @id @default(cuid())
+  employeeId String
+  employee Employee @relation(fields:[employeeId],references:[id])
+  effectiveFrom String
+  basic Decimal @db.Decimal(18,4)
+  allowance Decimal @default(0) @db.Decimal(18,4)
+  deduction Decimal @default(0) @db.Decimal(18,4)
+  contribution Decimal @default(0) @db.Decimal(18,4)
+  frequency String @default("Monthly")
+  @@unique([employeeId,effectiveFrom])
+}
+model Record {
+  id String @id @default(cuid())
+  organisationId String
+  organisation Organisation @relation(fields:[organisationId],references:[id])
+  module String
+  employeeId String?
+  title String
+  status String
+  data Json
+  version Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([organisationId,module,employeeId])
+}
+model PayrollRun {
+  id String @id @default(cuid())
+  organisationId String
+  organisation Organisation @relation(fields:[organisationId],references:[id])
+  period String
+  currency String
+  frequency String @default("Monthly")
+  kind String @default("Regular")
+  correctionOf String?
+  status String @default("Draft")
+  paymentStatus String @default("Unpaid")
+  preparedBy String
+  approvedBy String?
+  rejectionReason String?
+  version Int @default(1)
+  snapshot Json?
+  totals Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lines PayrollLine[]
+  @@index([organisationId,period])
+}
+model PayrollLine {
+  id String @id @default(cuid())
+  runId String
+  run PayrollRun @relation(fields:[runId],references:[id])
+  employeeId String
+  period String
+  currency String
+  regularKey String? @unique
+  snapshot Json
+  @@unique([runId,employeeId])
+}
+model Audit {
+  id String @id @default(cuid())
+  organisationId String
+  organisation Organisation @relation(fields:[organisationId],references:[id])
+  actorId String
+  action String
+  entityId String
+  createdAt DateTime @default(now())
+  @@index([organisationId,createdAt])
+}
