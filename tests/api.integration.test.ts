@@ -1,12 +1,14 @@
 import 'dotenv/config';
-import test from 'node:test';
+import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {db} from '../lib/db';
+import {removeStoredDocument} from '../lib/document-storage';
 const base=process.env.TEST_BASE_URL??'http://127.0.0.1:3000';
 const password=process.env.LOCAL_DEMO_PASSWORD;
 const enabled=!!process.env.RUN_INTEGRATION;
 let activeOrg='';
+after(async()=>{if(enabled)await db.$disconnect();});
 async function login(role:string){const r=await fetch(base+'/api/auth/sign-in/email',{method:'POST',headers:{'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify({email:`${role}@mfaro.example`,password})});assert.equal(r.status,200,await r.clone().text());return r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');}
 async function get(cookie:string,path='/api/workspace',extra:Record<string,string>={}){return fetch(base+path,{headers:{Cookie:cookie,...(activeOrg?{'x-organisation-id':activeOrg}:{}),...extra}});}
 async function post(cookie:string,body:unknown){return fetch(base+'/api/workspace',{method:'POST',headers:{Cookie:cookie,...(activeOrg?{'x-organisation-id':activeOrg}:{}),'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify(body)});}
@@ -48,6 +50,27 @@ test('API payroll segregation, loan timing, immutable snapshots and duplicate pr
  const reversed=await(await get(officer)).json();assert.equal(reversed.records.find((r:any)=>r.id===loanId).data.balance,'400.00');assert.equal(reversed.runs.find((r:any)=>r.id===id).totals.net,run.totals.net);
  }finally{
   activeOrg='';if(!fixtureOrg.startsWith('test-integration-'))throw Error('Invalid fixture target');
-  await db.payrollLine.deleteMany({where:{run:{organisationId:fixtureOrg}}});await db.payrollRun.deleteMany({where:{organisationId:fixtureOrg}});await db.record.deleteMany({where:{organisationId:fixtureOrg}});await db.audit.deleteMany({where:{organisationId:fixtureOrg}});await db.salary.deleteMany({where:{employee:{organisationId:fixtureOrg}}});await db.employee.deleteMany({where:{organisationId:fixtureOrg}});await db.membership.deleteMany({where:{organisationId:fixtureOrg}});await db.organisation.delete({where:{id:fixtureOrg}});await db.$disconnect();
+  await db.payrollLine.deleteMany({where:{run:{organisationId:fixtureOrg}}});await db.payrollRun.deleteMany({where:{organisationId:fixtureOrg}});await db.record.deleteMany({where:{organisationId:fixtureOrg}});await db.audit.deleteMany({where:{organisationId:fixtureOrg}});await db.salary.deleteMany({where:{employee:{organisationId:fixtureOrg}}});await db.employee.deleteMany({where:{organisationId:fixtureOrg}});await db.membership.deleteMany({where:{organisationId:fixtureOrg}});await db.organisation.delete({where:{id:fixtureOrg}});
+ }
+});
+test('API private attachments persist and enforce ownership and organisation scope',{skip:!enabled},async()=>{
+ if(process.env.APP_MODE!=='demo')throw Error('Integration fixtures require demo mode');
+ const fixtureOrg='test-documents-'+randomUUID(),own='test-employee-'+randomUUID(),other='test-employee-'+randomUUID(),doc='test-document-'+randomUUID(),otherDoc='test-document-'+randomUUID();activeOrg=fixtureOrg;
+ await db.organisation.create({data:{id:fixtureOrg,name:'Disposable attachment test',mode:'demo'}});
+ await db.membership.createMany({data:[{organisationId:fixtureOrg,userId:'user-admin',role:'Administrator'},{organisationId:fixtureOrg,userId:'user-employee',role:'Employee',employeeId:own}]});
+ for(const id of [own,other])await db.employee.create({data:{id,organisationId:fixtureOrg,number:id,name:'Fictional attachment employee',email:'attachment@example.test',department:'Test',branch:'Test',jobTitle:'Test',startDate:'2026-01-01'}});
+ for(const [id,employeeId] of [[doc,own],[otherDoc,other]])await db.record.create({data:{id,organisationId:fixtureOrg,employeeId,module:'Documents',title:'Fictional attachment',status:'Active',data:{category:'Contract'}}});
+ try{
+  const admin=await login('admin'),employee=await login('employee');const upload=async(cookie:string,id:string,bytes:string)=>{const form=new FormData();form.set('id',id);form.set('file',new File([bytes],'fictional.pdf',{type:'application/pdf'}));return fetch(base+'/api/documents',{method:'POST',headers:{Cookie:cookie,Origin:'http://localhost:3000','x-organisation-id':fixtureOrg},body:form});};
+  const uploaded=await upload(admin,doc,'%PDF-1.4 fictional private document');assert.equal(uploaded.status,200,await uploaded.clone().text());
+  assert.equal((await post(admin,{action:'record.save',module:'Documents',id:doc,title:'Updated attachment description',data:{employeeId:own,category:'Contract',expiryDate:'2030-12-31',notes:'Attachment must survive a metadata edit'}})).status,200);
+  assert.equal((await upload(admin,otherDoc,'%PDF-1.4 other employee')).status,200);
+  const downloaded=await get(employee,'/api/documents?id='+doc);assert.equal(downloaded.status,200);assert.equal(await downloaded.text(),'%PDF-1.4 fictional private document');assert.equal(downloaded.headers.get('cache-control'),'private, no-store');
+  assert.equal((await get(employee,'/api/documents?id='+otherDoc)).status,404);assert.equal((await get(admin,'/api/documents?id='+doc,{'x-organisation-id':'org-mfaro-demo'})).status,404);
+  assert.equal((await upload(employee,doc,'%PDF forbidden write')).status,403);assert.equal((await upload(admin,doc,'<html>invalid signature</html>')).status,400);
+ }finally{
+  activeOrg='';if(!fixtureOrg.startsWith('test-documents-'))throw Error('Invalid fixture target');
+  for(const r of await db.record.findMany({where:{organisationId:fixtureOrg,module:'Documents'}})){const d=r.data as any;if(d.fileKey)await removeStoredDocument(fixtureOrg,d.fileKey,d.fileProvider??'local');}
+  await db.record.deleteMany({where:{organisationId:fixtureOrg}});await db.audit.deleteMany({where:{organisationId:fixtureOrg}});await db.employee.deleteMany({where:{organisationId:fixtureOrg}});await db.membership.deleteMany({where:{organisationId:fixtureOrg}});await db.organisation.delete({where:{id:fixtureOrg}});
  }
 });

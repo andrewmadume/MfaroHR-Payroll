@@ -6,6 +6,7 @@ import {calculate,calculateEffective,sum,transition,workingDays,overlaps,money,C
 import {schemas,employeeFields} from './modules';
 import Decimal from 'decimal.js';
 import {z} from 'zod';
+import {documentLimit} from './document-policy';
 type Ctx=Awaited<ReturnType<typeof context>>;
 type Tx=Prisma.TransactionClient;
 const json=(v:unknown)=>JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue;
@@ -26,7 +27,7 @@ export async function state(c:Ctx){
  const audits=['Administrator','Payroll Officer','Payroll Approver','HR Manager'].includes(role)?await db.audit.findMany({where:{organisationId:c.org.id},orderBy:{createdAt:'desc'},take:20}):[];
  const memberships=await db.membership.findMany({where:{userId:c.user.id},include:{organisation:true}});
  const reads=await db.record.findFirst({where:{organisationId:c.org.id,module:'__notification_reads',title:c.user.id}});
- return json({user:{name:c.user.name,email:c.user.email},role,organisation:c.org,memberships:memberships.map(m=>({id:m.organisationId,name:m.organisation.name,role:m.role})),employees,records,runs,payslips,audits,notificationReadIds:obj(reads?.data).ids??[],employeeId:c.membership.employeeId});
+ return json({user:{name:c.user.name,email:c.user.email},role,organisation:c.org,memberships:memberships.map(m=>({id:m.organisationId,name:m.organisation.name,role:m.role})),employees,records,runs,payslips,audits,notificationReadIds:obj(reads?.data).ids??[],employeeId:c.membership.employeeId,limits:{documentUploadBytes:documentLimit()}});
 }
 const amount=z.coerce.number().min(0).max(100000000);
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s=>new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s,'Invalid date');
@@ -55,7 +56,7 @@ export async function saveRecord(c:Ctx,module:string,title:string,input:Record<s
  const data=validateFields(module,input);const employeeId=data.employeeId||null;
  if(employeeId)await employeeFor(c,employeeId);
  if(!title?.trim()||title.length>200)throw Error('A title of 1–200 characters is required');
- if(id){const old=await db.record.findFirst({where:{id,organisationId:c.org.id,module}});if(!old)throw Error('404: Record not found');if(['Approved','Disbursed','Completed','Closed'].includes(old.status))throw Error('Create a new request to change completed or approved records');if(old.employeeId)await employeeFor(c,old.employeeId);}
+ if(id){const old=await db.record.findFirst({where:{id,organisationId:c.org.id,module}});if(!old)throw Error('404: Record not found');if(['Approved','Disbursed','Completed','Closed'].includes(old.status))throw Error('Create a new request to change completed or approved records');if(old.employeeId)await employeeFor(c,old.employeeId);if(module==='Documents')for(const key of ['fileKey','fileProvider','fileName','fileType','fileSize'])if(obj(old.data)[key]!==undefined)data[key]=obj(old.data)[key];}
  if(c.membership.role==='Employee'&&['Performance','Onboarding'].includes(module)){
   if(!id)denied();const old=await db.record.findFirstOrThrow({where:{id,organisationId:c.org.id}});const response=data.response;Object.assign(data,obj(old.data));if(module==='Performance')data.response=response;
  }

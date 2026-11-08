@@ -1,6 +1,54 @@
 {
-  "name":"mfaro-hr-payroll","version":"1.0.0","private":true,"type":"module",
-  "scripts":{"dev":"next dev --hostname 127.0.0.1","build":"next build --webpack","start":"next start --hostname 127.0.0.1","typecheck":"tsc --noEmit","test":"tsx --test tests/*.test.ts","db:generate":"prisma generate","db:migrate":"prisma migrate deploy","db:seed":"tsx prisma/seed.ts","local:setup":"tsx scripts/local.ts setup","local:start":"tsx scripts/local.ts start","demo:build":"tsx scripts/demo.ts"},
-  "dependencies":{"next":"16.4.5","react":"^19.2.0","react-dom":"^19.2.0","@prisma/client":"7.10.1","@prisma/adapter-pg":"7.10.1","pg":"^8.16.3","better-auth":"1.7.18","zod":"^4.3.6","decimal.js":"^10.6.0","lucide-react":"^0.577.0","pdf-lib":"^1.17.1","exceljs":"^4.4.0","papaparse":"^5.5.3","dotenv":"^17.2.3"},
-  "devDependencies":{"prisma":"7.10.1","typescript":"^5.9.3","tsx":"^4.21.0","@types/react":"^19.2.0","@types/react-dom":"^19.2.0","@types/node":"^24.10.0","@types/pg":"^8.15.6","@types/papaparse":"^5.3.16","tailwindcss":"^4.2.1","@tailwindcss/postcss":"^4.2.1","embedded-postgres":"18.6.0-beta.19","esbuild":"^0.27.3"}
+  "name": "mfaro-hr-payroll",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "local:setup": "tsx scripts/local.ts setup",
+    "local:start": "tsx scripts/local.ts start",
+    "demo:build": "tsx scripts/demo.ts",
+    "vercel:build": "prisma generate && next build --webpack"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "@vercel/blob": "^2.8.2",
+    "better-auth": "1.7.18",
+    "decimal.js": "^10.6.0",
+    "dotenv": "^17.2.3",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.577.0",
+    "next": "16.4.5",
+    "papaparse": "^5.5.3",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.16.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^24.10.0",
+    "@types/papaparse": "^5.3.16",
+    "@types/pg": "^8.15.6",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "embedded-postgres": "18.6.0-beta.19",
+    "esbuild": "^0.27.3",
+    "prisma": "7.10.1",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": "24.x"
+  }
 }

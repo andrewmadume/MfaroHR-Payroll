@@ -1,6 +1,6 @@
 # Mfaro HR & Payroll
 
-[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Live read-only demo](https://andrewmadume.github.io/MfaroHR-Payroll/)
+[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Vercel deployment guide](VERCEL-DEPLOYMENT.md) · [Live read-only demo](https://andrewmadume.github.io/MfaroHR-Payroll/)
 
 Mfaro is a responsive HR and payroll application built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Better Auth. It includes fictional demonstration records and six separate role accounts. The supplied Mfaro logo is included.
 
@@ -87,7 +87,7 @@ name,email,number,jobTitle,department,branch,startDate,currency,basic,effectiveF
 Example Person,person@example.test,EXAMPLE-001,Coordinator,Operations,Harare Head Office,2026-11-01,USD,1500,2026-11-01
 ```
 
-Documents supports private PDF/PNG/JPEG attachments up to 5 MB, checked by signature and stored under random filenames outside `public/`. Every download checks organisation membership, module permission and employee ownership. Seeded document register entries have no file until one is uploaded. Antivirus scanning, DOCX uploads, object storage and automatic retention are not implemented.
+Documents supports private PDF/PNG/JPEG attachments up to 5 MB, checked by signature and stored under random filenames outside `public/`. Every download checks organisation membership, module permission and employee ownership. Seeded document register entries have no file until one is uploaded. Private Vercel Blob storage is supported for Vercel deployments; see `VERCEL-DEPLOYMENT.md`. Hosted server uploads are capped at 4 MB; local uploads remain capped at 5 MB. Antivirus scanning, DOCX uploads and automatic retention are not implemented.
 
 CSV, XLSX and PDF exports use the same authorised state as the interface. Payroll reports use finalised snapshot lines. CSV cells are protected against formula injection. Filters for department, currency and period are supported in the export endpoint; the interface currently exposes department where relevant. The full report-filter set in the specification remains unfinished. PDF payslips include earnings, deductions, separate employer contributions, YTD net pay, unique references and demo notices.
 
@@ -111,7 +111,7 @@ Integration tests use a separate, uniquely named disposable fixture organisation
 
 ## Deploy the full application
 
-Deploy on a Node.js host that supports Next.js, PostgreSQL connections and a private persistent file volume. The static hosted product tour is not a deployment of the full server application.
+For Vercel, follow `VERCEL-DEPLOYMENT.md` and connect PostgreSQL plus a private Blob store. For a long-lived Node.js host, use PostgreSQL and a private persistent file volume. The static hosted product tour is not a deployment of the full server application.
 
 1. Provision a dedicated PostgreSQL database with TLS, encryption at rest, restricted networking and backups. Use a least-privilege application database user.
 2. Configure `DATABASE_URL`, a random `BETTER_AUTH_SECRET`, an HTTPS `BETTER_AUTH_URL` and a private persistent `DOCUMENT_DIRECTORY`. Supply secrets through the host's secret manager. Never commit `.env` or `.local`.
@@ -136,6 +136,7 @@ Restore into a separate empty PostgreSQL database with `pg_restore`, restore the
 - `lib/service.ts`: tenant scope, validation, records and payroll workflow transactions.
 - `lib/permissions.ts`: six fixed roles and record scope.
 - `lib/payroll.ts`: shared decimal calculation and transition rules.
+- `lib/document-storage.ts`: local development and private Vercel Blob storage.
 - `prisma/`: PostgreSQL schema, migrations and fictional seed.
 - `scripts/local.ts`: isolated development PostgreSQL setup and launcher.
 - `scripts/demo.ts`: separate read-only static tour build.

@@ -22,6 +22,8 @@ The workflow is manual to avoid unintentionally republishing the public tour on 
 
 ## Full application
 
+For Vercel hosting, use [VERCEL-DEPLOYMENT.md](VERCEL-DEPLOYMENT.md).
+
 Clone the repository and follow `README.md`. Use a Node.js host with a private PostgreSQL database and persistent private document storage. Set environment variables through the host's secret manager. Run Prisma generation/migrations, application checks and the production build before startup.
 
 `APP_MODE=demo` is for fictional data. No country-specific statutory rules are verified; live payroll finalisation is blocked. The complete outstanding scope is recorded in `SPECIFICATION-STATUS.md`.

@@ -2,6 +2,8 @@ import {context,apiError,guardOrigin} from '@/lib/context';
 import {state,saveEmployee,saveRecord,recordAction,createRun,payrollAction,audit} from '@/lib/service';
 import {db} from '@/lib/db';
 import {canWrite} from '@/lib/permissions';
+export const runtime='nodejs';
+export const maxDuration=60;
 export async function GET(request:Request){try{return Response.json(await state(await context(request)));}catch(e){return apiError(e);}}
 export async function POST(request:Request){try{
  guardOrigin(request);const c=await context(request);const b=await request.json();let id;

@@ -21,3 +21,9 @@ The API integration payroll test creates its own uniquely named test organisatio
 The checks above are not a complete production acceptance test. There has been no live payroll, payment transmission, external email, country compliance review, penetration test, load test or end-to-end backup restoration. PDF generation was checked through authenticated API delivery and its PDF signature, not an exhaustive visual audit of every report or long employee name. Keyboard-accessible native forms/dialogs and labels were inspected, but a full screen-reader and WCAG audit remains outstanding. CSV validation and private upload paths exist; a full adversarial import/document suite remains to be written.
 
 `SPECIFICATION-STATUS.md` identifies unfinished functionality. No unfinished feature should be inferred complete from the module navigation or this validation report.
+
+## Vercel preparation
+
+Added a private Vercel Blob storage adapter, small PostgreSQL pool, pooled/direct connection separation, Vercel build configuration and deployment guide. Five additional unit tests cover document signatures, platform upload limits, tenant namespaces, local persistence and refusal to fall back to ephemeral storage on Vercel. The authenticated API suite also checks attachment persistence after metadata edits, ownership and organisation isolation.
+
+Actual PostgreSQL and private Blob operations on Vercel still require a connected workspace and cloud resources; local/CI success does not establish a live deployment.

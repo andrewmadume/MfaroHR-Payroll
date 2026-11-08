@@ -1,0 +1,10 @@
+.git
+.local
+.env
+.env.local
+.env.*.local
+node_modules
+.next
+dist
+*.zip
+*.tar.gz
