@@ -9,7 +9,16 @@ const password=process.env.LOCAL_DEMO_PASSWORD;
 const enabled=!!process.env.RUN_INTEGRATION;
 let activeOrg='';
 after(async()=>{if(enabled)await db.$disconnect();});
-async function login(role:string){const r=await fetch(base+'/api/auth/sign-in/email',{method:'POST',headers:{'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify({email:`${role}@mfaro.example`,password})});assert.equal(r.status,200,await r.clone().text());return r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');}
+const sessions=new Map<string,string>();
+async function login(role:string){
+ const cached=sessions.get(role);if(cached)return cached;
+ for(let attempt=0;attempt<3;attempt++){
+  const r=await fetch(base+'/api/auth/sign-in/email',{method:'POST',headers:{'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify({email:`${role}@mfaro.example`,password})});
+  if(r.status===429&&attempt<2){const seconds=Number(r.headers.get('retry-after')??'11');await r.arrayBuffer();await new Promise(resolve=>setTimeout(resolve,(Number.isFinite(seconds)?Math.min(Math.max(seconds,1),60):11)*1000+250));continue;}
+  assert.equal(r.status,200,await r.clone().text());const cookie=r.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');sessions.set(role,cookie);return cookie;
+ }
+ throw Error('Sign-in retry limit exceeded');
+}
 async function get(cookie:string,path='/api/workspace',extra:Record<string,string>={}){return fetch(base+path,{headers:{Cookie:cookie,...(activeOrg?{'x-organisation-id':activeOrg}:{}),...extra}});}
 async function post(cookie:string,body:unknown){return fetch(base+'/api/workspace',{method:'POST',headers:{Cookie:cookie,...(activeOrg?{'x-organisation-id':activeOrg}:{}),'Content-Type':'application/json',Origin:'http://localhost:3000'},body:JSON.stringify(body)});}
 test('API authentication, own-record access, organisation isolation and export protection',{skip:!enabled},async()=>{
@@ -74,3 +83,4 @@ test('API private attachments persist and enforce ownership and organisation sco
   await db.record.deleteMany({where:{organisationId:fixtureOrg}});await db.audit.deleteMany({where:{organisationId:fixtureOrg}});await db.employee.deleteMany({where:{organisationId:fixtureOrg}});await db.membership.deleteMany({where:{organisationId:fixtureOrg}});await db.organisation.delete({where:{id:fixtureOrg}});
  }
 });
+
