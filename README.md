@@ -1,6 +1,6 @@
 # Mfaro HR & Payroll
 
-[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Vercel deployment guide](VERCEL-DEPLOYMENT.md) · [Live read-only demo](https://andrewmadume.github.io/MfaroHR-Payroll/)
+[Repository](https://github.com/andrewmadume/MfaroHR-Payroll) · [GitHub deployment guide](GITHUB-DEPLOYMENT.md) · [Vercel deployment guide](VERCEL-DEPLOYMENT.md) · [Supabase database guide](SUPABASE-DEPLOYMENT.md) · [Live read-only demo](https://andrewmadume.github.io/MfaroHR-Payroll/)
 
 Mfaro is a responsive HR and payroll application built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, PostgreSQL, Prisma 7 and Better Auth. It includes fictional demonstration records and six separate role accounts. The supplied Mfaro logo is included.
 

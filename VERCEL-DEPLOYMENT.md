@@ -7,7 +7,7 @@ The repository includes `vercel.json`, a Prisma-aware build command, a small reu
 ## Create the services
 
 1. Sign in to Vercel and import `andrewmadume/MfaroHR-Payroll` from GitHub. Use the Next.js preset, repository root and Node.js 24. The build command is defined in `vercel.json`.
-2. Connect PostgreSQL through Vercel Marketplace, such as Neon or Prisma Postgres, or use an existing compatible PostgreSQL provider. Choose a region near the Vercel function region. Use a pooled URL for application traffic and a direct URL for migrations when the provider supplies both.
+2. The selected database host is Supabase project `gicagqonnngawnoapdyz`. Follow `SUPABASE-DEPLOYMENT.md` to inspect and migrate that existing project once access is granted. Other compatible PostgreSQL providers remain an option if the selected target changes. Choose a region near the Vercel function region. Use a pooled URL for application traffic and a direct URL for migrations when the provider supplies both.
 3. In the project's Storage tab, create a Blob store with **Private** access. Connect it to the project. Its server-only `BLOB_READ_WRITE_TOKEN` must be available to the appropriate deployment environment.
 4. Configure the variables below. Use separate databases and Blob stores for preview and production. Never connect pull-request previews to the production employee database.
 
