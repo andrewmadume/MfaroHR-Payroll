@@ -1,18 +1,28 @@
 import {context,apiError} from '@/lib/context';
-import {state} from '@/lib/service';
+import {employeeScope,recordScope} from '@/lib/service';
+import {db} from '@/lib/db';
+import {PublicError} from '@/lib/errors';
 import {canView} from '@/lib/permissions';
 import ExcelJS from 'exceljs';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 export async function GET(request:Request){try{
- const c=await context(request);const url=new URL(request.url);const module=url.searchParams.get('module')??'Employees';const format=url.searchParams.get('format')??'csv';
+ const c=await context(request);const url=new URL(request.url);const module=url.searchParams.get('module')??'Employees';const format=url.searchParams.get('format')??'csv';if(!['csv','xlsx','pdf'].includes(format))throw new PublicError(400,'Unsupported export format');
  if(!canView(c.membership.role,module))throw Error('403: Export access denied');
- const s=await state(c) as any;let rows:Record<string,any>[]=[];
- if(module==='Employees')rows=s.employees.map((e:any)=>({Number:e.number,Name:e.name,Department:e.department,Branch:e.branch,Title:e.jobTitle,Status:e.status,Currency:e.currency}));
- else if(['Payroll','Payslips & Payments','Reports'].includes(module)){
-  if(c.membership.role==='Employee'){rows=s.payslips.map((p:any)=>({Period:p.period,Employee:p.snapshot.employee.name,Currency:p.currency,Gross:p.snapshot.result.gross,Deductions:p.snapshot.result.deductions,Net:p.snapshot.result.net}));}
-  else rows=s.runs.filter((r:any)=>r.status==='Finalised'&&(!url.searchParams.get('run')||r.id===url.searchParams.get('run'))).flatMap((r:any)=>r.lines.map((l:any)=>({Period:r.period,Employee:l.snapshot.employee.name,Department:l.snapshot.employee.department,Currency:r.currency,Gross:l.snapshot.result.gross,Deductions:l.snapshot.result.deductions,Net:l.snapshot.result.net,Employer:l.snapshot.result.employer,Payment:r.paymentStatus})));
- }else rows=s.records.filter((r:any)=>r.module===module).map((r:any)=>({Title:r.title,Status:r.status,Employee:s.employees.find((e:any)=>e.id===r.employeeId)?.name??'',...r.data,bankAccount:undefined}));
- const department=url.searchParams.get('department'),currency=url.searchParams.get('currency'),period=url.searchParams.get('period');if(department)rows=rows.filter(r=>r.Department===department);if(currency)rows=rows.filter(r=>r.Currency===currency);if(period)rows=rows.filter(r=>r.Period===period);
+ let rows:Record<string,any>[]=[];
+
+ const limit=5000;
+ const check=<T,>(items:T[])=>{if(items.length>limit)throw new PublicError(413,'Export exceeds 5000 rows. Narrow the department, period, currency or payroll run.');return items;};
+ const department=url.searchParams.get('department')??undefined,currency=url.searchParams.get('currency')??undefined,period=url.searchParams.get('period')??undefined,runId=url.searchParams.get('run')??undefined;
+ if(module==='Employees'){
+  rows=check(await db.employee.findMany({where:{...employeeScope(c),...(department?{department}:{}),...(currency?{currency}:{})},orderBy:{id:'asc'},take:limit+1,select:{number:true,name:true,department:true,branch:true,jobTitle:true,status:true,currency:true}})).map(e=>({Number:e.number,Name:e.name,Department:e.department,Branch:e.branch,Title:e.jobTitle,Status:e.status,Currency:e.currency}));
+ }else if(['Payroll','Payslips & Payments','Reports'].includes(module)){
+  if(c.membership.role!=='Employee'&&!canView(c.membership.role,'Payroll'))throw new PublicError(403,'Payroll register access denied');
+  rows=check(await db.payrollLine.findMany({where:{run:{organisationId:c.org.id,status:'Finalised',...(runId?{id:runId}:{}),...(period?{period}:{})},...(c.membership.role==='Employee'?{employeeId:c.membership.employeeId??'none'}:{}),...(currency?{currency}:{}),...(department?{snapshot:{path:['employee','department'],equals:department}}:{})},orderBy:{id:'asc'},take:limit+1,select:{period:true,currency:true,snapshot:true,run:{select:{paymentStatus:true}}}})).map(p=>{const snap=p.snapshot as any;return {Period:p.period,Employee:snap.employee.name,Department:snap.employee.department,Currency:p.currency,Gross:snap.result.gross,Deductions:snap.result.deductions,Net:snap.result.net,Employer:snap.result.employer,Payment:p.run.paymentStatus};});
+ }else{
+  const found=check(await db.record.findMany({where:{AND:[await recordScope(c,{module,department,limit:limit+1}),{module}]},orderBy:{id:'asc'},take:limit+1}));
+  const names=await db.employee.findMany({where:{organisationId:c.org.id,id:{in:found.flatMap(r=>r.employeeId?[r.employeeId]:[])}},select:{id:true,name:true},take:limit});
+  rows=found.map(r=>{const d=r.data as Record<string,any>;return {Title:r.title,Status:r.status,Employee:names.find(e=>e.id===r.employeeId)?.name??'',...d,bankAccount:undefined,fileKey:undefined,fileProvider:undefined};});
+ }
  const filename=`mfaro-${module.replaceAll(' ','-').replaceAll('&','and')}.${format}`;
  if(format==='xlsx'){const book=new ExcelJS.Workbook();const sheet=book.addWorksheet('Mfaro export');sheet.columns=Object.keys(rows[0]??{Message:''}).map(k=>({header:k,key:k,width:24}));rows.forEach(r=>sheet.addRow(r));sheet.getRow(1).font={bold:true,color:{argb:'FF001B64'}};return new Response(new Uint8Array(await book.xlsx.writeBuffer()),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="${filename}"`}});}
  if(format==='pdf'){

@@ -41,6 +41,7 @@ jobs:
       - name: Generate ephemeral test credentials
         run: node scripts/ci-credentials.mjs
       - run: npm ci
+      - run: npm audit --audit-level=low
       - run: npm run db:generate
       - run: npm run db:migrate
       - run: npm run db:seed
