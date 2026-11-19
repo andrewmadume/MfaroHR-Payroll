@@ -56,3 +56,9 @@ Existing local attachments are not uploaded automatically. Their records remain 
 This is deployment preparation, not proof of a live Vercel deployment. Live PostgreSQL and private Blob behaviour can only be verified after your account and resources are connected. Hosting does not complete the outstanding production requirements or enable live statutory payroll; see `SPECIFICATION-STATUS.md`.
 
 Official references: [Postgres integrations](https://vercel.com/docs/postgres), [private Blob storage](https://vercel.com/docs/vercel-blob/private-storage), [function payload limits](https://vercel.com/docs/functions/limitations).
+
+## Supabase TLS and project URL
+
+For the configured Frankfurt project, use the transaction pooler host `aws-1-eu-central-1.pooler.supabase.com`, port 6543, and the dedicated `mfaro_runtime` role. Keep DATABASE_URL server-only. Set DATABASE_SSL_CA to the PEM root certificate downloaded from Supabase Database Settings. The adapter verifies both the certificate chain and hostname; it does not disable TLS validation.
+
+When BETTER_AUTH_URL is omitted on Vercel, authentication uses the platform-provided VERCEL_PROJECT_PRODUCTION_URL and secure cookies. Explicit BETTER_AUTH_URL remains available for local and custom-domain setups.
