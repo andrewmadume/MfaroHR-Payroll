@@ -19,4 +19,4 @@
 
 .login-form,.login-form form{min-width:0}@media(max-width:760px){.login-page{grid-template-columns:minmax(0,1fr)}}
 
-.sidebar .brand{position:sticky;top:0;z-index:2;background:#00174d;flex-shrink:0}
+.sidebar .brand{position:sticky;top:0;z-index:2;background:#008FCE;border-radius:10px;flex-shrink:0}
